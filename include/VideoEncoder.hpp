@@ -21,7 +21,7 @@ public:
     void Finish();
 
 private:
-    FILE* m_ffmpegPipe = nullptr;
+    void* m_ffmpegPipe = nullptr; // Windows HANDLE
     int m_width = 0;
     int m_height = 0;
     bool m_isRunning = false;

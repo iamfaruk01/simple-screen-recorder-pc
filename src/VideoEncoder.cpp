@@ -41,7 +41,7 @@ bool VideoEncoder::Start(const std::string& outputPath, int sourceWidth, int sou
     
     // BUILD THE FFMPEG COMMAND
     std::stringstream cmd;
-    cmd << "\"" << "\"" << ffmpegPath << "\""
+    cmd << "\"" << ffmpegPath << "\""
         << " -loglevel warning"
         << " -thread_queue_size 2048 -f rawvideo -pixel_format bgra"
         << " -video_size " << sourceWidth << "x" << sourceHeight
@@ -56,45 +56,67 @@ bool VideoEncoder::Start(const std::string& outputPath, int sourceWidth, int sou
         }
     }
 
-    // Apply Scaling Filters
-    // Apply Scaling Filters
-    // Use -2 for width/height to tell FFmpeg to maintain aspect ratio while keeping even dimensions
     if (targetWidth != 0 || targetHeight != 0) {
         std::string wStr = (targetWidth <= 0) ? "-2" : std::to_string(targetWidth);
         std::string hStr = (targetHeight <= 0) ? "-2" : std::to_string(targetHeight);
-        
         cmd << " -vf \"scale=" << wStr << ":" << hStr << ":flags=bicubic\" ";
     } else {
-        // Native resolution: Just ensure even dimensions for H.264
         cmd << " -vf \"scale=trunc(iw/2)*2:trunc(ih/2)*2\" ";
     }
 
-    // Encoding Settings
     cmd << " -c:v libx264 -preset ultrafast -crf 23"
         << " -c:a aac -b:a 192k" 
         << " -pix_fmt yuv420p" 
         << " -shortest" 
         << " -y " 
-        << "\"" << outputPath << "\"" << "\"";
+        << "\"" << outputPath << "\"";
 
-    std::cout << "Starting FFmpeg pipe: " << cmd.str() << std::endl;
+    std::string cmdStr = cmd.str();
+    std::cout << "Starting FFmpeg: " << cmdStr << std::endl;
 
-    m_ffmpegPipe = _popen(cmd.str().c_str(), "wb");
-    if (!m_ffmpegPipe) return false;
+    // --- Modern Win32 Process Implementation (Hides Console) ---
+    HANDLE hPipeRead, hPipeWrite;
+    SECURITY_ATTRIBUTES sa = { sizeof(SECURITY_ATTRIBUTES), NULL, TRUE };
+    
+    if (!CreatePipe(&hPipeRead, &hPipeWrite, &sa, 0)) return false;
+    SetHandleInformation(hPipeWrite, HANDLE_FLAG_INHERIT, 0); // Don't inherit write end
 
+    STARTUPINFOA si = { sizeof(STARTUPINFOA) };
+    si.dwFlags = STARTF_USESTDHANDLES | STARTF_USESHOWWINDOW;
+    si.hStdInput = hPipeRead;
+    si.hStdOutput = NULL; // We don't need stdout
+    si.hStdError = NULL;  // We don't need stderr
+    si.wShowWindow = SW_HIDE; // HIDDEN!
+
+    PROCESS_INFORMATION pi = { 0 };
+    BOOL success = CreateProcessA(NULL, (LPSTR)cmdStr.c_str(), NULL, NULL, TRUE, 
+                                  CREATE_NO_WINDOW, NULL, NULL, &si, &pi);
+
+    if (!success) {
+        CloseHandle(hPipeRead);
+        CloseHandle(hPipeWrite);
+        return false;
+    }
+
+    CloseHandle(hPipeRead); // Child has its end
+    CloseHandle(pi.hProcess);
+    CloseHandle(pi.hThread);
+
+    m_ffmpegPipe = (void*)hPipeWrite;
     m_isRunning = true;
     return true;
 }
 
 bool VideoEncoder::WriteFrame(const std::vector<uint8_t>& bgraData) {
     if (!m_isRunning || !m_ffmpegPipe) return false;
-    size_t written = fwrite(bgraData.data(), 1, bgraData.size(), m_ffmpegPipe);
-    return written == bgraData.size();
+    DWORD written;
+    BOOL success = WriteFile((HANDLE)m_ffmpegPipe, bgraData.data(), (DWORD)bgraData.size(), &written, NULL);
+    return success && written == bgraData.size();
 }
 
 void VideoEncoder::Finish() {
     if (m_ffmpegPipe) {
-        _pclose(m_ffmpegPipe);
+        CloseHandle((HANDLE)m_ffmpegPipe);
         m_ffmpegPipe = nullptr;
     }
     m_isRunning = false;

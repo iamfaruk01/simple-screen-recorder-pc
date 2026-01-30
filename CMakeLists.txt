@@ -14,6 +14,7 @@ set(SOURCES
     src/Controller.cpp
     src/RegionSelector.cpp
     src/WebcamDevice.cpp
+    src/resources.rc
 )
 
 set(HEADERS
