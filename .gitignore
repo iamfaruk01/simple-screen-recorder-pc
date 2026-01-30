@@ -1,7 +1,12 @@
-# Build directories
+# Build and distribution directories
 build/
 cmake-build-*/
 out/
+dist/SimpleScreenRecorder
+bin/
+x64/
+Debug/
+Release/
 
 # CMake generated files
 CMakeCache.txt
@@ -19,14 +24,17 @@ Makefile
 *.userosscache
 *.sln.docstates
 
-# Visual Studio Code
+# IDE files
 .vscode/
 *.code-workspace
+.vs/
+.idea/
+*.swp
+*.swo
 
 # Compiled object files
 *.o
 *.obj
-*.exe
 *.dll
 *.lib
 *.a
@@ -38,6 +46,13 @@ Makefile
 *.ilk
 *.exp
 *.map
+
+# Video recordings
+*.mp4
+*.mkv
+*.avi
+*.mov
+recordings/
 
 # Log files
 *.log

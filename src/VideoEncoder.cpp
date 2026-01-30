@@ -2,6 +2,7 @@
 #include <iostream>
 #include <sstream>
 #include <filesystem>
+#include <Windows.h>
 
 VideoEncoder::VideoEncoder() : m_ffmpegPipe(nullptr), m_isRunning(false), m_width(0), m_height(0) {}
 
@@ -10,8 +11,21 @@ VideoEncoder::~VideoEncoder() {
 }
 
 std::string VideoEncoder::FindFFmpeg() {
+    // 1. Check same directory as the executable (for portable distribution)
+    char exePath[MAX_PATH];
+    if (GetModuleFileNameA(NULL, exePath, MAX_PATH)) {
+        std::filesystem::path exeDir = std::filesystem::path(exePath).parent_path();
+        std::filesystem::path localFFmpeg = exeDir / "ffmpeg.exe";
+        if (std::filesystem::exists(localFFmpeg)) {
+            return localFFmpeg.make_preferred().string();
+        }
+    }
+    
+    // 2. Check development path
     std::filesystem::path p1 = "D:/projects/screen-recorder/node_modules/ffmpeg-static/ffmpeg.exe";
     if (std::filesystem::exists(p1)) return p1.make_preferred().string();
+    
+    // 3. Fall back to system PATH
     return "ffmpeg.exe";
 }
 

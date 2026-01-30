@@ -1,3 +1,4 @@
+#include <windows.h>
 #include <iostream>
 #include <chrono>
 #include <thread>
@@ -187,7 +188,7 @@ void RecordingThread() {
     capture.Cleanup();
 }
 
-int main() {
+int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nShowCmd) {
     Controller ui;
     g_uiPtr = &ui;
 

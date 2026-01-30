@@ -37,7 +37,7 @@ endif()
 # For now, we'll just define the structure
 # find_package(FFMPEG REQUIRED)
 
-add_executable(${PROJECT_NAME} ${SOURCES} ${HEADERS})
+add_executable(${PROJECT_NAME} WIN32 ${SOURCES} ${HEADERS})
 
 target_include_directories(${PROJECT_NAME} PRIVATE include)
 

@@ -71,8 +71,8 @@ vcpkg install boost-asio:x64-windows  # For async operations (if needed)
    # If you don't have vcpkg installed
    git clone https://github.com/Microsoft/vcpkg.git
    cd vcpkg
-   ./bootstrap-vcpkg.bat
-   ./vcpkg integrate install
+   .\bootstrap-vcpkg.bat
+   .\vcpkg integrate install
    ```
 
 3. **Install dependencies**
