@@ -7,7 +7,7 @@ A lightweight, high-performance screen recording application for Windows built w
 - **Screen Capture**: High-quality desktop recording using DirectX 11
 - **Audio Recording**: Simultaneous audio capture from system audio and microphone
 - **Webcam Support**: Picture-in-picture webcam overlay during recording
-- **Visual Effects**: Real-time annotations, highlights, and cursor effects
+- **Visual Effects**: Real-time annotations, highlights, mouse pointer highlighter, and cursor effects
 - **Region Selection**: Select specific screen areas for focused recording
 - **Video Encoding**: Efficient MP4 output with configurable quality settings
 - **Modern UI**: Clean, responsive interface built with native Windows APIs
@@ -244,7 +244,6 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 ## 📞 Support
 
 - **Issues**: [GitHub Issues](https://github.com/iamfaruk01/simple-screen-recorder-pc/issues)
-- **Discussions**: [GitHub Discussions](https://github.com/iamfaruk01/simple-screen-recorder-pc/discussions)
 - **Email**: faruk.khan.cse@gmail.com
 
 ---
