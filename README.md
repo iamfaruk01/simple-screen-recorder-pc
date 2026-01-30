@@ -62,7 +62,7 @@ vcpkg install boost-asio:x64-windows  # For async operations (if needed)
 
 1. **Clone the repository**
    ```bash
-   git clone https://github.com/your-username/simple-screen-recorder-pc.git
+   git clone https://github.com/iamfaruk01/simple-screen-recorder-pc.git
    cd simple-screen-recorder-pc
    ```
 
@@ -161,6 +161,8 @@ We welcome contributions! Here's how to get started:
    git push origin feature/your-feature-name
    ```
 
+   Your fork should be at: `https://github.com/YOUR_USERNAME/simple-screen-recorder-pc`
+
 ### Development Guidelines
 
 - **Code Quality**: Ensure all code compiles without warnings on MSVC
@@ -169,13 +171,6 @@ We welcome contributions! Here's how to get started:
 - **Thread Safety**: Use proper synchronization for multi-threaded components
 - **Error Handling**: Provide meaningful error messages and graceful fallbacks
 
-### Testing
-
-Currently, manual testing is required. We plan to add:
-- Unit tests for core components
-- Integration tests for recording workflows
-- Performance benchmarks
-- Automated UI testing
 
 ## 📁 Project Structure
 
@@ -202,7 +197,7 @@ The application supports runtime configuration through:
 
 - Output format: MP4 (H.264 + AAC)
 - Frame rate: 30 FPS
-- Resolution: Native display resolution
+- Resolution: 720p
 - Audio: 48kHz, stereo, 128 kbps
 
 ## 🐛 Troubleshooting
@@ -248,9 +243,9 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## 📞 Support
 
-- **Issues**: [GitHub Issues](https://github.com/your-username/simple-screen-recorder-pc/issues)
-- **Discussions**: [GitHub Discussions](https://github.com/your-username/simple-screen-recorder-pc/discussions)
-- **Email**: your-email@example.com
+- **Issues**: [GitHub Issues](https://github.com/iamfaruk01/simple-screen-recorder-pc/issues)
+- **Discussions**: [GitHub Discussions](https://github.com/iamfaruk01/simple-screen-recorder-pc/discussions)
+- **Email**: faruk.khan.cse@gmail.com
 
 ---
 
