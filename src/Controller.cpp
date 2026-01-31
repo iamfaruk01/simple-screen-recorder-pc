@@ -11,6 +11,7 @@
 #include <shlobj.h>
 #include <filesystem>
 #include "RegionSelector.hpp"
+#include "resource.h"
 
 Controller::Controller() {
     char path[MAX_PATH];
@@ -29,14 +30,16 @@ Controller::~Controller() {}
 bool Controller::Create() {
     const char CLASS_NAME[] = "ScreenRecorderController";
 
-    WNDCLASS wc = { };
+    WNDCLASSEX wc = { sizeof(WNDCLASSEX) };
     wc.lpfnWndProc   = WindowProc;
     wc.hInstance     = GetModuleHandle(NULL);
     wc.lpszClassName = CLASS_NAME;
     wc.hCursor       = LoadCursor(NULL, IDC_ARROW);
     wc.hbrBackground = CreateSolidBrush(RGB(35, 35, 38)); // Darker, cleaner background
+    wc.hIcon         = LoadIcon(wc.hInstance, MAKEINTRESOURCE(IDI_ICON1));
+    wc.hIconSm       = LoadIcon(wc.hInstance, MAKEINTRESOURCE(IDI_ICON1));
 
-    RegisterClass(&wc);
+    RegisterClassEx(&wc);
 
     m_hwnd = CreateWindowEx(
         WS_EX_TOPMOST | WS_EX_LAYERED,
@@ -121,11 +124,16 @@ bool Controller::Create() {
     SendMessage(m_labelMouse, WM_SETFONT, (WPARAM)hFont, TRUE);
 
     y += 40;
-    m_checkHighlight = CreateWindow("BUTTON", "Enable Mouse Highlight", WS_VISIBLE | WS_CHILD | BS_AUTOCHECKBOX, margin + 10, y, 350, 35, m_hwnd, (HMENU)6, NULL, NULL);
+    m_checkHighlight = CreateWindow("BUTTON", "Highlighter in Output Video", WS_VISIBLE | WS_CHILD | BS_AUTOCHECKBOX, margin + 10, y, 350, 35, m_hwnd, (HMENU)6, NULL, NULL);
     SendMessage(m_checkHighlight, BM_SETCHECK, BST_CHECKED, 0);
     SendMessage(m_checkHighlight, WM_SETFONT, (WPARAM)hFont, TRUE);
 
     y += 45;
+    m_checkLiveHighlight = CreateWindow("BUTTON", "Highlighter While Recording\n(Disable if lagging)", WS_VISIBLE | WS_CHILD | BS_AUTOCHECKBOX | BS_MULTILINE, margin + 10, y, 350, 60, m_hwnd, (HMENU)16, NULL, NULL);
+    SendMessage(m_checkLiveHighlight, BM_SETCHECK, BST_CHECKED, 0);
+    SendMessage(m_checkLiveHighlight, WM_SETFONT, (WPARAM)hFont, TRUE);
+
+    y += 70;
     m_checkCursor = CreateWindow("BUTTON", "Show Mouse Cursor", WS_VISIBLE | WS_CHILD | BS_AUTOCHECKBOX, margin + 10, y, 350, 35, m_hwnd, (HMENU)7, NULL, NULL);
     SendMessage(m_checkCursor, BM_SETCHECK, BST_CHECKED, 0);
     SendMessage(m_checkCursor, WM_SETFONT, (WPARAM)hFont, TRUE);
@@ -248,6 +256,7 @@ void Controller::SwitchToFloatingBar(bool floating) {
         ShowWindow(m_comboArea, SW_HIDE);
         ShowWindow(m_labelMouse, SW_HIDE);
         ShowWindow(m_checkHighlight, SW_HIDE);
+        ShowWindow(m_checkLiveHighlight, SW_HIDE);
         ShowWindow(m_checkCursor, SW_HIDE);
         ShowWindow(m_btnShowFolder, SW_HIDE);
         ShowWindow(m_labelSavePath, SW_HIDE);
@@ -294,6 +303,7 @@ void Controller::SwitchToFloatingBar(bool floating) {
         ShowWindow(m_comboArea, SW_SHOW);
         ShowWindow(m_labelMouse, SW_SHOW);
         ShowWindow(m_checkHighlight, SW_SHOW);
+        ShowWindow(m_checkLiveHighlight, SW_SHOW);
         ShowWindow(m_checkCursor, SW_SHOW);
         ShowWindow(m_btnShowFolder, SW_SHOW);
         ShowWindow(m_labelSavePath, SW_SHOW);
@@ -331,6 +341,8 @@ void Controller::Relayout(int width, int height) {
     y += 40;
     SetWindowPos(m_checkHighlight, NULL, margin + 10, y, 350, 35, SWP_NOZORDER);
     y += 45;
+    SetWindowPos(m_checkLiveHighlight, NULL, margin + 10, y, 350, 60, SWP_NOZORDER);
+    y += 70;
     SetWindowPos(m_checkCursor, NULL, margin + 10, y, 350, 35, SWP_NOZORDER);
 
     y += 70;
@@ -688,6 +700,97 @@ void Controller::ToggleCaptureIndicator(bool show, RECT region) {
     }
 }
 
+// --- Mouse Overlay Window (Shows highlight on screen) ---
+LRESULT CALLBACK MouseOverlayWndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
+    Controller* pCtrl = (Controller*)GetWindowLongPtr(hwnd, GWLP_USERDATA);
+    switch (uMsg) {
+        case WM_PAINT: {
+            PAINTSTRUCT ps;
+            HDC hdc = BeginPaint(hwnd, &ps);
+            RECT rc; GetClientRect(hwnd, &rc);
+            
+            HDC memDC = CreateCompatibleDC(hdc);
+            HBITMAP memBM = CreateCompatibleBitmap(hdc, rc.right, rc.bottom);
+            SelectObject(memDC, memBM);
+
+            // Fill with Magenta (Transparency Key)
+            HBRUSH hTrans = CreateSolidBrush(RGB(255, 0, 255));
+            FillRect(memDC, &rc, hTrans);
+            DeleteObject(hTrans);
+
+            if (pCtrl && pCtrl->m_settings.showHighlight) {
+                // Draw at the center of our small window
+                int cx = rc.right / 2;
+                int cy = rc.bottom / 2;
+
+                bool isClicked = (GetAsyncKeyState(VK_LBUTTON) & 0x8000) != 0;
+                COLORREF color = isClicked ? RGB(255, 50, 50) : RGB(255, 255, 0);
+                int radius = isClicked ? 30 : 25;
+
+                HBRUSH hBrush = CreateSolidBrush(color);
+                HGDIOBJ hOld = SelectObject(memDC, hBrush);
+                SelectObject(memDC, GetStockObject(NULL_PEN));
+                Ellipse(memDC, cx - radius, cy - radius, cx + radius, cy + radius);
+                SelectObject(memDC, hOld);
+                DeleteObject(hBrush);
+            }
+
+            BitBlt(hdc, 0, 0, rc.right, rc.bottom, memDC, 0, 0, SRCCOPY);
+            DeleteObject(memBM);
+            DeleteDC(memDC);
+            EndPaint(hwnd, &ps);
+            return 0;
+        }
+        case WM_ERASEBKGND:
+            return 1;
+    }
+    return DefWindowProc(hwnd, uMsg, wParam, lParam);
+}
+
+void Controller::CreateMouseOverlayWindow() {
+    if (m_hwndMouseOverlay) return;
+
+    const char* CLASS_NAME = "MouseOverlayWindow";
+    WNDCLASS wc = { 0 };
+    wc.lpfnWndProc = MouseOverlayWndProc;
+    wc.hInstance = GetModuleHandle(NULL);
+    wc.lpszClassName = CLASS_NAME;
+    wc.hCursor = LoadCursor(NULL, IDC_ARROW);
+    wc.hbrBackground = (HBRUSH)GetStockObject(NULL_BRUSH);
+    RegisterClass(&wc);
+
+    m_hwndMouseOverlay = CreateWindowEx(
+        WS_EX_TOPMOST | WS_EX_LAYERED | WS_EX_TOOLWINDOW | WS_EX_TRANSPARENT,
+        CLASS_NAME, "Mouse Overlay",
+        WS_POPUP,
+        0, 0, 100, 100,
+        NULL, NULL, GetModuleHandle(NULL), NULL
+    );
+    SetWindowLongPtr(m_hwndMouseOverlay, GWLP_USERDATA, (LONG_PTR)this);
+
+    // Use ColorKey for perfect transparency (Magenta = clear) + Global Alpha for semi-transparency
+    SetLayeredWindowAttributes(m_hwndMouseOverlay, RGB(255, 0, 255), 150, LWA_COLORKEY | LWA_ALPHA);
+    
+    // EXCLUDE from capture
+    SetWindowDisplayAffinity(m_hwndMouseOverlay, WDA_EXCLUDEFROMCAPTURE);
+}
+
+void Controller::ToggleMouseOverlay(bool show) {
+    if (show && m_settings.showLiveHighlight) {
+        if (!m_hwndMouseOverlay) CreateMouseOverlayWindow();
+        
+        // Initial position follow
+        POINT p; GetCursorPos(&p);
+        int size = 120;
+        SetWindowPos(m_hwndMouseOverlay, HWND_TOPMOST, p.x - size/2, p.y - size/2, size, size, SWP_SHOWWINDOW | SWP_NOACTIVATE);
+        
+        SetTimer(m_hwnd, 104, 10, NULL); // 100 FPS update for perfect tracking
+    } else {
+        if (m_hwndMouseOverlay) ShowWindow(m_hwndMouseOverlay, SW_HIDE);
+        KillTimer(m_hwnd, 104);
+    }
+}
+
 void Controller::Run() {
     MSG msg = { };
     while (GetMessage(&msg, NULL, 0, 0)) {
@@ -818,6 +921,7 @@ LRESULT CALLBACK Controller::WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPA
                             // Preparation to start
                             pThis->m_settings.recordAudio = (SendMessage(pThis->m_checkAudio, BM_GETCHECK, 0, 0) == BST_CHECKED);
                             pThis->m_settings.showHighlight = (SendMessage(pThis->m_checkHighlight, BM_GETCHECK, 0, 0) == BST_CHECKED);
+                            pThis->m_settings.showLiveHighlight = (SendMessage(pThis->m_checkLiveHighlight, BM_GETCHECK, 0, 0) == BST_CHECKED);
                             pThis->m_settings.showCursor = (SendMessage(pThis->m_checkCursor, BM_GETCHECK, 0, 0) == BST_CHECKED);
                             pThis->m_settings.useCountdown = (SendMessage(pThis->m_checkCountdown, BM_GETCHECK, 0, 0) == BST_CHECKED);
                             pThis->m_settings.useFloatingBar = (SendMessage(pThis->m_checkFloating, BM_GETCHECK, 0, 0) == BST_CHECKED);
@@ -861,6 +965,9 @@ LRESULT CALLBACK Controller::WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPA
                                 
                                 // Show the recording area indicator
                                 pThis->ToggleCaptureIndicator(true, pThis->m_settings.customRegion);
+
+                                // Show the mouse feedback overlay
+                                pThis->ToggleMouseOverlay(true);
                             }
                         } else {
                             // Stop recording
@@ -873,6 +980,9 @@ LRESULT CALLBACK Controller::WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPA
                             
                             // Set color back to Green immediately
                             pThis->ToggleCaptureIndicator(true, pThis->m_settings.customRegion);
+
+                            // Hide the mouse feedback overlay
+                            pThis->ToggleMouseOverlay(false);
 
                             // Restart UI preview camera if it was enabled
                             if (pThis->m_settings.useWebcam) {
@@ -917,6 +1027,16 @@ LRESULT CALLBACK Controller::WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPA
                     case 12: // Webcam Checkbox
                         pThis->ToggleWebcamPreview(SendMessage(pThis->m_checkWebcam, BM_GETCHECK, 0, 0) == BST_CHECKED);
                         break;
+
+                    case 16: // Live Highlight Checkbox
+                    {
+                        bool enable = (SendMessage(pThis->m_checkLiveHighlight, BM_GETCHECK, 0, 0) == BST_CHECKED);
+                        pThis->m_settings.showLiveHighlight = enable;
+                        if (pThis->m_isRecording) {
+                            pThis->ToggleMouseOverlay(enable);
+                        }
+                        break;
+                    }
 
                     case 15: // Area Combo
                     {
@@ -971,6 +1091,9 @@ LRESULT CALLBACK Controller::WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPA
                         if (pThis->m_onStart) pThis->m_onStart();
                         SetTimer(hwnd, 102, 1000, NULL); // Start recording timer
                         if (pThis->m_settings.useFloatingBar) pThis->SwitchToFloatingBar(true);
+
+                        // Show the mouse feedback overlay
+                        pThis->ToggleMouseOverlay(true);
                     } else {
                         pThis->UpdateButtonState();
                     }
@@ -998,6 +1121,15 @@ LRESULT CALLBACK Controller::WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPA
                             SetWindowPos(pThis->m_hwndWebcamPreview, NULL, newX, newY, expectedW, curH, SWP_NOZORDER);
                         }
                         InvalidateRect(pThis->m_hwndWebcamPreview, NULL, FALSE);
+                    }
+                } else if (wParam == 104) { // Mouse Overlay update
+                    if (pThis->m_hwndMouseOverlay && pThis->m_settings.showHighlight) {
+                        POINT p; GetCursorPos(&p);
+                        int size = 120;
+                        // Move the window to the cursor position
+                        SetWindowPos(pThis->m_hwndMouseOverlay, HWND_TOPMOST, p.x - size/2, p.y - size/2, 0, 0, 
+                                     SWP_NOSIZE | SWP_NOACTIVATE | SWP_SHOWWINDOW);
+                        InvalidateRect(pThis->m_hwndMouseOverlay, NULL, FALSE);
                     }
                 }
                 break;

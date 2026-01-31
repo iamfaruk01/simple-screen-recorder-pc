@@ -28,8 +28,12 @@ std::string GetNextRecordingFilename() {
     auto in_time_t = std::chrono::system_clock::to_time_t(now);
     
     std::stringstream ss;
-    ss << g_saveDirectory << "/recording_" << std::put_time(std::localtime(&in_time_t), "%Y%m%d_%H%M%S") << ".mp4";
-    return ss.str();
+    ss << "recording_" << std::put_time(std::localtime(&in_time_t), "%Y%m%d_%H%M%S") << ".mp4";
+    
+    fs::path dir(g_saveDirectory);
+    fs::path fullPath = dir / ss.str();
+    
+    return fullPath.string();
 }
 
 /**
@@ -119,9 +123,17 @@ void RecordingThread() {
             // 2. Start Encoder
             capture.SetRegion(g_currentSettings.customRegion);
             capture.CaptureFrame(frameBuffer, screenWidth, screenHeight);
-            encoder.Start(outputPath, screenWidth, screenHeight, fps, 
+            if (!encoder.Start(outputPath, screenWidth, screenHeight, fps, 
                           micName, g_currentSettings.useSystemAudio,
-                          g_currentSettings.width, g_currentSettings.height);
+                          g_currentSettings.width, g_currentSettings.height)) {
+                std::cerr << "Failed to start Video Encoder!" << std::endl;
+                g_isRecording = false;
+                if (g_currentSettings.recordAudio) audio.Stop();
+                if (g_currentSettings.useWebcam) webcam.Stop();
+                audio.Cleanup();
+                webcam.Cleanup();
+                continue;
+            }
 
             int frameCount = 0;
             auto startTime = std::chrono::steady_clock::now();
@@ -141,14 +153,22 @@ void RecordingThread() {
                 capture.CaptureFrame(frameBuffer, capturedW, capturedH);
 
                 // Effects
-                if (g_currentSettings.showHighlight) {
-                    auto mousePos = VisualEffects::GetMousePosition();
-                    bool isClicked = VisualEffects::IsLeftClicked();
-                    VisualEffects::Color color = isClicked ? VisualEffects::Color{255, 0, 0, 150} : VisualEffects::Color{255, 255, 0, 100};
-                    VisualEffects::DrawHighlight(frameBuffer, screenWidth, screenHeight, mousePos, isClicked ? 30 : 25, color);
-                }
-                if (g_currentSettings.showCursor) {
-                    VisualEffects::DrawCursor(frameBuffer, screenWidth, screenHeight, VisualEffects::GetMousePosition());
+                if (g_currentSettings.showHighlight || g_currentSettings.showCursor) {
+                    POINT mousePos = VisualEffects::GetMousePosition();
+                    
+                    // OFFSET mouse position relative to the captured area start
+                    POINT origin = capture.GetCaptureOrigin();
+                    mousePos.x -= origin.x;
+                    mousePos.y -= origin.y;
+
+                    if (g_currentSettings.showHighlight) {
+                        bool isClicked = VisualEffects::IsLeftClicked();
+                        VisualEffects::Color color = isClicked ? VisualEffects::Color{255, 0, 0, 150} : VisualEffects::Color{255, 255, 0, 100};
+                        VisualEffects::DrawHighlight(frameBuffer, screenWidth, screenHeight, mousePos, isClicked ? 30 : 25, color);
+                    }
+                    if (g_currentSettings.showCursor) {
+                        VisualEffects::DrawCursor(frameBuffer, screenWidth, screenHeight, mousePos);
+                    }
                 }
 
                 // Webcam

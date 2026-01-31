@@ -17,6 +17,7 @@ public:
         bool recordAudio = true;
         bool useSystemAudio = false; // false = Mic, true = System
         bool showHighlight = true;
+        bool showLiveHighlight = true;
         bool showCursor = true;
         bool useCountdown = true;
         bool useFloatingBar = true;
@@ -51,6 +52,7 @@ public:
 
     friend LRESULT CALLBACK WebcamPreviewWndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
     friend LRESULT CALLBACK CaptureIndicatorWndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
+    friend LRESULT CALLBACK MouseOverlayWndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
 
 private:
     static LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
@@ -61,6 +63,7 @@ private:
     HWND m_comboRes = nullptr;
     HWND m_checkAudio = nullptr;
     HWND m_checkHighlight = nullptr;
+    HWND m_checkLiveHighlight = nullptr;
     HWND m_checkCursor = nullptr;
     HWND m_checkCountdown = nullptr;
     HWND m_checkFloating = nullptr;
@@ -68,6 +71,7 @@ private:
     HWND m_comboArea = nullptr;
     HWND m_hwndWebcamPreview = nullptr;
     HWND m_hwndCaptureIndicator = nullptr;
+    HWND m_hwndMouseOverlay = nullptr;
     HWND m_labelTimer = nullptr;
     HWND m_labelVideo = nullptr;
     HWND m_labelMouse = nullptr;
@@ -105,6 +109,9 @@ private:
     void CreateCaptureIndicatorWindow();
     void ToggleCaptureIndicator(bool show, RECT region);
     void UpdateCustomRegionFromIndicator(RECT windowRect);
+
+    void CreateMouseOverlayWindow();
+    void ToggleMouseOverlay(bool show);
 
     RECT m_originalRect = {0};
     bool m_isFloating = false;

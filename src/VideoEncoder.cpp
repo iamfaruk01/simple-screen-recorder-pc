@@ -19,10 +19,16 @@ std::string VideoEncoder::FindFFmpeg() {
         if (std::filesystem::exists(localFFmpeg)) {
             return localFFmpeg.make_preferred().string();
         }
+        
+        // Check dist folder if running from build
+        std::filesystem::path distFFmpeg = exeDir / ".." / "dist" / "SimpleScreenRecorder" / "ffmpeg.exe";
+        if (std::filesystem::exists(distFFmpeg)) {
+            return distFFmpeg.make_preferred().string();
+        }
     }
     
-    // 2. Check development path
-    std::filesystem::path p1 = "D:/projects/screen-recorder/node_modules/ffmpeg-static/ffmpeg.exe";
+    // 2. Check development path in project root
+    std::filesystem::path p1 = "d:/projects/simple-screen-recorder/simple-screen-recorder-pc/dist/SimpleScreenRecorder/ffmpeg.exe";
     if (std::filesystem::exists(p1)) return p1.make_preferred().string();
     
     // 3. Fall back to system PATH

@@ -1,2 +1,2 @@
-// Resource file for Simple Screen Recorder
+#include "..\\include\\resource.h"
 IDI_ICON1 ICON "..\\assets\\icon.ico"

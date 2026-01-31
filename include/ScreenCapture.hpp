@@ -22,6 +22,7 @@ public:
     bool CaptureFrame(std::vector<uint8_t>& outBuffer, int& width, int& height);
     void SetRegion(RECT r) { m_captureRect = r; }
     void Cleanup();
+    POINT GetCaptureOrigin() const;
 
 private:
     ComPtr<ID3D11Device> m_d3dDevice;
@@ -35,6 +36,7 @@ private:
     bool SetupDuplication();
 
     RECT m_captureRect = {0}; // 0 = Fullscreen
+    POINT m_lastOrigin = { 0, 0 };
 
     ComPtr<ID3D11Texture2D> m_stagingTexture;
     D3D11_TEXTURE2D_DESC m_stagingDesc = { (UINT)0 };

@@ -148,6 +148,10 @@ bool ScreenCapture::CaptureFrame(std::vector<uint8_t>& outBuffer, int& width, in
         }
         
         m_d3dContext->Unmap(m_stagingTexture.Get(), 0);
+        
+        // Store current origin for mouse coordinate mapping
+        m_lastOrigin.x = m_outputDesc.DesktopCoordinates.left + capX;
+        m_lastOrigin.y = m_outputDesc.DesktopCoordinates.top + capY;
     }
 
     m_deskDupl->ReleaseFrame();
@@ -159,4 +163,8 @@ void ScreenCapture::Cleanup() {
     m_d3dContext.Reset();
     m_d3dDevice.Reset();
     m_initialized = false;
+}
+
+POINT ScreenCapture::GetCaptureOrigin() const {
+    return m_lastOrigin;
 }
