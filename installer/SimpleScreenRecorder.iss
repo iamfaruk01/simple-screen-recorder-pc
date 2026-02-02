@@ -5,7 +5,7 @@
 ; with Next → Next → Install wizard
 
 #define MyAppName "Simple Screen Recorder"
-#define MyAppVersion "1.0.0"
+#define MyAppVersion "1.0.1"
 #define MyAppPublisher "Faruk Khan"
 #define MyAppURL "https://github.com/iamfaruk01/simple-screen-recorder-pc"
 #define MyAppExeName "SimpleScreenRecorder.exe"
