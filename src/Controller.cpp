@@ -101,10 +101,12 @@ bool Controller::Create() {
     SendMessage(m_checkAudio, BM_SETCHECK, BST_UNCHECKED, 0);
     SendMessage(m_checkAudio, WM_SETFONT, (WPARAM)hFont, TRUE);
 
+    /*
     y += 45;
     m_checkWebcam = CreateWindow("BUTTON", "Record Webcam", WS_VISIBLE | WS_CHILD | BS_AUTOCHECKBOX, margin, y, 300, 35, m_hwnd, (HMENU)12, NULL, NULL);
     SendMessage(m_checkWebcam, BM_SETCHECK, BST_UNCHECKED, 0);
     SendMessage(m_checkWebcam, WM_SETFONT, (WPARAM)hFont, TRUE);
+    */
 
     y += 45;
     // --- Countdown Option ---
@@ -251,7 +253,7 @@ void Controller::SwitchToFloatingBar(bool floating) {
         ShowWindow(m_checkAudio, SW_HIDE);
         ShowWindow(m_checkCountdown, SW_HIDE);
         ShowWindow(m_checkFloating, SW_HIDE);
-        ShowWindow(m_checkWebcam, SW_HIDE);
+        // ShowWindow(m_checkWebcam, SW_HIDE);
         ShowWindow(m_labelCaptureArea, SW_HIDE);
         ShowWindow(m_comboArea, SW_HIDE);
         ShowWindow(m_labelMouse, SW_HIDE);
@@ -298,7 +300,7 @@ void Controller::SwitchToFloatingBar(bool floating) {
         ShowWindow(m_checkAudio, SW_SHOW);
         ShowWindow(m_checkCountdown, SW_SHOW);
         ShowWindow(m_checkFloating, SW_SHOW);
-        ShowWindow(m_checkWebcam, SW_SHOW);
+        // ShowWindow(m_checkWebcam, SW_SHOW);
         ShowWindow(m_labelCaptureArea, SW_SHOW);
         ShowWindow(m_comboArea, SW_SHOW);
         ShowWindow(m_labelMouse, SW_SHOW);
@@ -328,8 +330,8 @@ void Controller::Relayout(int width, int height) {
 
     y += 80;
     SetWindowPos(m_checkAudio, NULL, margin, y, 300, 35, SWP_NOZORDER);
-    y += 45;
-    SetWindowPos(m_checkWebcam, NULL, margin, y, 300, 35, SWP_NOZORDER);
+    // y += 45;
+    // SetWindowPos(m_checkWebcam, NULL, margin, y, 300, 35, SWP_NOZORDER);
 
     y += 75;
     SetWindowPos(m_checkCountdown, NULL, margin, y, 300, 35, SWP_NOZORDER);
@@ -386,7 +388,7 @@ LRESULT CALLBACK WebcamPreviewWndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARA
                 RECT rc; GetClientRect(hwnd, &rc);
                 POINT pt = { LOWORD(lParam), HIWORD(lParam) };
                 if (pt.x > rc.right - 35 && pt.y < 35) {
-                    SendMessage(pController->m_checkWebcam, BM_SETCHECK, BST_UNCHECKED, 0);
+                    if (pController->m_checkWebcam) SendMessage(pController->m_checkWebcam, BM_SETCHECK, BST_UNCHECKED, 0);
                     SendMessage(pController->GetWindowHandle(), WM_COMMAND, 12, 0);
                     return 0;
                 }
